@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Crash Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      margin: 20px;
+      background: #111;
+      color: white;
+    }
+
+    #mainChart {
+      width: 100%;
+      height: 700px;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>iOS Crash Dashboard</h1>
+
+<div id="mainChart"></div>
+
+<script>
+
+const dates = [
+  "May 1",
+  "May 2",
+  "May 3",
+  "May 4",
+  "May 5"
+];
+
+const option = {
+  tooltip: {
+    trigger: 'axis'
+  },
+
+  legend: {
+    textStyle: {
+      color: 'white'
+    }
+  },
+
+  dataZoom: [
+    {
+      type: 'inside'
+    },
+    {
+      type: 'slider'
+    }
+  ],
+
+  xAxis: {
+    type: 'category',
+    data: dates,
+    axisLabel: {
+      color: 'white'
+    }
+  },
+
+  yAxis: {
+    type: 'value',
+    axisLabel: {
+      color: 'white'
+    }
+  },
+
+  series: [
+    {
+      name: 'Total Crashes',
+      type: 'line',
+      smooth: true,
+      data: [3200, 3400, 3700, 4100, 3900]
+    },
+
+    {
+      name: '44f0571b',
+      type: 'line',
+      smooth: true,
+      data: [500, 550, 700, 900, 850]
+    },
+
+    {
+      name: '4b94166c',
+      type: 'line',
+      smooth: true,
+      data: [200, 250, 300, 400, 450]
+    }
+  ]
+};
+
+const chart = echarts.init(document.getElementById('mainChart'));
+
+chart.setOption(option);
+
+</script>
+
+</body>
+</html>
