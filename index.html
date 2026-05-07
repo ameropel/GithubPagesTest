@@ -1,108 +1,226 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Crash Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 
   <style>
     body {
-      font-family: Arial;
-      margin: 20px;
-      background: #111;
-      color: white;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0f19;
+      color: #e5e7eb;
     }
 
-    #mainChart {
+    .header {
+      padding: 20px 24px;
+      font-size: 20px;
+      font-weight: bold;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 16px 24px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .kpi-title {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      margin-top: 6px;
+      font-weight: bold;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      padding: 0 24px 24px 24px;
+    }
+
+    .chart {
+      height: 420px;
       width: 100%;
-      height: 700px;
     }
 
-    h1 {
-      margin-bottom: 30px;
+    .small {
+      height: 420px;
+    }
+
+    .list-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #1f2937;
+      font-size: 13px;
+    }
+
+    .red {
+      color: #f87171;
+    }
+
+    .green {
+      color: #34d399;
     }
   </style>
 </head>
 
 <body>
 
-<h1>iOS Crash Dashboard</h1>
+<div class="header">iOS Crash Dashboard</div>
 
-<div id="mainChart"></div>
+<!-- KPI ROW -->
+<div class="kpi-row">
+  <div class="card">
+    <div class="kpi-title">Total Crashes (Today)</div>
+    <div class="kpi-value">3,486</div>
+  </div>
+
+  <div class="card">
+    <div class="kpi-title">Crash-Free Sessions</div>
+    <div class="kpi-value">99.97%</div>
+  </div>
+
+  <div class="card">
+    <div class="kpi-title">Active Crash Signatures</div>
+    <div class="kpi-value">42</div>
+  </div>
+
+  <div class="card">
+    <div class="kpi-title">Top Regression</div>
+    <div class="kpi-value red">+214%</div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="grid">
+
+  <!-- LEFT: MAIN CHART -->
+  <div class="card">
+    <div id="totalChart" class="chart"></div>
+  </div>
+
+  <!-- RIGHT: TOP MOVERS -->
+  <div class="card small">
+    <div style="font-weight:bold; margin-bottom:10px;">Top Regressions</div>
+
+    <div class="list-item">
+      crash_abc123 <span class="red">+320%</span>
+    </div>
+
+    <div class="list-item">
+      crash_def456 <span class="red">+210%</span>
+    </div>
+
+    <div class="list-item">
+      crash_ghi789 <span class="green">-40%</span>
+    </div>
+
+    <div class="list-item">
+      crash_xyz111 <span class="red">+95%</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- SECOND ROW -->
+<div class="grid">
+
+  <div class="card">
+    <div id="topCrashes" class="chart"></div>
+  </div>
+
+  <div class="card small">
+    <div style="font-weight:bold; margin-bottom:10px;">Notes</div>
+    <div style="font-size:13px; color:#9ca3af;">
+      • Spike correlates with v7.2 rollout<br/>
+      • crash_abc123 increasing steadily<br/>
+      • Older versions stable<br/>
+    </div>
+  </div>
+
+</div>
 
 <script>
 
-const dates = [
-  "May 1",
-  "May 2",
-  "May 3",
-  "May 4",
-  "May 5"
-];
+// -------------------- DATA --------------------
 
-const option = {
-  tooltip: {
-    trigger: 'axis'
+const dates = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+const totalCrashes = [3200, 3400, 3700, 4100, 3486];
+
+const crashA = [500, 550, 800, 1200, 1400];
+const crashB = [200, 250, 300, 350, 400];
+const crashC = [100, 120, 110, 90, 80];
+
+// -------------------- TOTAL CRASHES --------------------
+
+const totalChart = echarts.init(document.getElementById('totalChart'));
+
+totalChart.setOption({
+  title: {
+    text: "Total Crashes Over Time",
+    textStyle: { color: "#e5e7eb", fontSize: 14 }
   },
-
-  legend: {
-    textStyle: {
-      color: 'white'
-    }
-  },
-
-  dataZoom: [
-    {
-      type: 'inside'
-    },
-    {
-      type: 'slider'
-    }
-  ],
-
+  tooltip: { trigger: "axis" },
   xAxis: {
-    type: 'category',
+    type: "category",
     data: dates,
-    axisLabel: {
-      color: 'white'
-    }
+    axisLabel: { color: "#9ca3af" }
   },
-
   yAxis: {
-    type: 'value',
-    axisLabel: {
-      color: 'white'
-    }
+    type: "value",
+    axisLabel: { color: "#9ca3af" }
   },
+  series: [{
+    name: "Crashes",
+    type: "line",
+    smooth: true,
+    data: totalCrashes
+  }]
+});
 
+// -------------------- TOP CRASHES --------------------
+
+const topChart = echarts.init(document.getElementById('topCrashes'));
+
+topChart.setOption({
+  title: {
+    text: "Top Crash Signatures",
+    textStyle: { color: "#e5e7eb", fontSize: 14 }
+  },
+  tooltip: { trigger: "axis" },
+  legend: {
+    textStyle: { color: "#9ca3af" }
+  },
+  xAxis: {
+    type: "category",
+    data: dates,
+    axisLabel: { color: "#9ca3af" }
+  },
+  yAxis: {
+    type: "value",
+    axisLabel: { color: "#9ca3af" }
+  },
   series: [
-    {
-      name: 'Total Crashes',
-      type: 'line',
-      smooth: true,
-      data: [3200, 3400, 3700, 4100, 3900]
-    },
-
-    {
-      name: '44f0571b',
-      type: 'line',
-      smooth: true,
-      data: [500, 550, 700, 900, 850]
-    },
-
-    {
-      name: '4b94166c',
-      type: 'line',
-      smooth: true,
-      data: [200, 250, 300, 400, 450]
-    }
+    { name: "crash_abc123", type: "line", smooth: true, data: crashA },
+    { name: "crash_def456", type: "line", smooth: true, data: crashB },
+    { name: "crash_ghi789", type: "line", smooth: true, data: crashC }
   ]
-};
-
-const chart = echarts.init(document.getElementById('mainChart'));
-
-chart.setOption(option);
+});
 
 </script>
 
