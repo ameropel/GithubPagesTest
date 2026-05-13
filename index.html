@@ -34,13 +34,9 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
 
-    .full {
-      grid-column: span 2;
-    }
+    .full { grid-column: span 2; }
 
-    canvas {
-      max-height: 300px;
-    }
+    canvas { max-height: 300px; }
 
     .kpi {
       display: flex;
@@ -64,6 +60,31 @@
       font-size: 12px;
       opacity: 0.7;
     }
+
+    .toggle {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .toggle button {
+      background: #111827;
+      color: #e2e8f0;
+      border: 1px solid #374151;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .toggle button:hover {
+      background: #1f2937;
+    }
+
+    .active {
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+    }
   </style>
 </head>
 
@@ -73,7 +94,7 @@
 
 <div class="grid">
 
-  <!-- KPI ROW -->
+  <!-- KPI -->
   <div class="card full kpi">
     <div class="kpi-box">
       <div class="kpi-value">13.3M</div>
@@ -89,84 +110,155 @@
     </div>
   </div>
 
-  <!-- TOTAL CRASHES OVER TIME -->
+  <!-- PLATFORM TOGGLE -->
+  <div class="card full toggle">
+    <button onclick="setPlatform('ios')" id="btn-ios">iOS</button>
+    <button onclick="setPlatform('tvos')" id="btn-tvos">tvOS</button>
+  </div>
+
+  <!-- TIME RANGE TOGGLE -->
+  <div class="card full toggle">
+    <button onclick="setRange('24h')" id="btn-24h">Last 24 Hours</button>
+    <button onclick="setRange('7d')" id="btn-7d">Last 7 Days</button>
+    <button onclick="setRange('avg')" id="btn-avg">Daily Avg (Week)</button>
+  </div>
+
+  <!-- CHARTS -->
   <div class="card full">
     <h3>Total Crashes Over Time</h3>
     <canvas id="totalChart"></canvas>
   </div>
 
-  <!-- TOP 10 CRASHES -->
   <div class="card full">
-    <h3>Top 10 Crash Signatures (Trend)</h3>
+    <h3>Top Crash Signatures</h3>
     <canvas id="topCrashChart"></canvas>
-  </div>
-
-  <!-- iOS Index -->
-  <div class="platform-card">
-    <h2>iOS Dashboard</h2>
-    <p>View iOS crash trends and regressions</p>
-    <a href="/ios/">Open Dashboard</a>
   </div>
 
 </div>
 
 <script>
 /* -----------------------------
-   HARD CODED DATA (replace later)
+   DATA (platform × range)
 ------------------------------*/
-
-// Days (x-axis)
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-// Total crashes per day
-const totalCrashes = [120, 180, 150, 200, 170, 90, 110];
-
-// Top 3 crash signatures (example subset of your real data)
-const crashData = {
-  "44f0571b": [20, 30, 25, 40, 35, 10, 15],
-  "4b94166ca": [10, 15, 12, 18, 14, 8, 9],
-  "9b2268125": [5, 8, 6, 9, 7, 3, 4]
-};
-
-/* -----------------------------
-   TOTAL CRASH CHART
-------------------------------*/
-new Chart(document.getElementById("totalChart"), {
-  type: "line",
-  data: {
-    labels: days,
-    datasets: [{
-      label: "Total Crashes",
-      data: totalCrashes,
-      borderColor: "#38bdf8",
-      tension: 0.3
-    }]
-  }
-});
-
-/* -----------------------------
-   TOP CRASHES CHART
-------------------------------*/
-const datasets = Object.keys(crashData).map((key, i) => {
-  return {
-    label: key,
-    data: crashData[key],
-    tension: 0.3
-  };
-});
-
-new Chart(document.getElementById("topCrashChart"), {
-  type: "line",
-  data: {
-    labels: days,
-    datasets: datasets
+const dataStore = {
+  ios: {
+    "24h": {
+      labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+      total: [10,12,8,7,6,9,18,22,28,20,18,16,24,30,34,38,36,28,24,20,16,14,12,9]
+    },
+    "7d": {
+      labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+      total: [100,160,140,190,150,80,100]
+    },
+    "avg": {
+      labels: ["Weekday Avg","Weekend Avg"],
+      total: [150, 90]
+    }
   },
-  options: {
-    plugins: {
-      legend: { position: "bottom" }
+
+  tvos: {
+    "24h": {
+      labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+      total: [2,3,1,2,1,2,4,5,6,4,3,3,5,7,8,9,8,6,5,4,3,2,2,1]
+    },
+    "7d": {
+      labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+      total: [20,30,25,40,35,18,22]
+    },
+    "avg": {
+      labels: ["Weekday Avg","Weekend Avg"],
+      total: [32, 20]
     }
   }
-});
+};
+
+let platform = "ios";
+let range = "7d";
+
+let totalChart;
+let topCrashChart;
+
+/* -----------------------------
+   RENDER
+------------------------------*/
+function render() {
+  const data = dataStore[platform][range];
+
+  if (totalChart) totalChart.destroy();
+  if (topCrashChart) topCrashChart.destroy();
+
+  totalChart = new Chart(document.getElementById("totalChart"), {
+    type: "line",
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: `${platform.toUpperCase()} Crashes`,
+        data: data.total,
+        borderColor: "#38bdf8",
+        tension: 0.3
+      }]
+    }
+  });
+
+  topCrashChart = new Chart(document.getElementById("topCrashChart"), {
+    type: "line",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: "44f0571b",
+          data: data.total.map(v => v * 0.25),
+          tension: 0.3
+        },
+        {
+          label: "4b94166ca",
+          data: data.total.map(v => v * 0.15),
+          tension: 0.3
+        },
+        {
+          label: "9b2268125",
+          data: data.total.map(v => v * 0.1),
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+
+  setActiveButtons();
+}
+
+/* -----------------------------
+   TOGGLES
+------------------------------*/
+function setPlatform(p) {
+  platform = p;
+  render();
+}
+
+function setRange(r) {
+  range = r;
+  render();
+}
+
+/* -----------------------------
+   UI STATE
+------------------------------*/
+function setActiveButtons() {
+  document.querySelectorAll(".toggle button").forEach(b => b.classList.remove("active"));
+
+  document.getElementById("btn-" + platform).classList.add("active");
+  document.getElementById("btn-" + range).classList.add("active");
+}
+
+/* -----------------------------
+   INIT
+------------------------------*/
+render();
 </script>
 
 </body>
