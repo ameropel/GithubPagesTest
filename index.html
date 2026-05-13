@@ -38,6 +38,7 @@
 
     canvas { max-height: 300px; }
 
+    /* KPI ROW */
     .kpi {
       display: flex;
       gap: 16px;
@@ -61,14 +62,38 @@
       opacity: 0.7;
     }
 
-    .toggle {
+    /* NEW: snapshot row */
+    .snapshot {
+      display: flex;
+      gap: 16px;
+    }
+
+    .snapshot-box {
+      flex: 1;
+      background: #0b1220;
+      border: 1px solid #374151;
+      padding: 14px;
+      border-radius: 10px;
+    }
+
+    .snapshot-title {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    .snapshot-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .platform-toggle {
       display: flex;
       gap: 10px;
       justify-content: center;
-      flex-wrap: wrap;
     }
 
-    .toggle button {
+    .platform-toggle button {
       background: #111827;
       color: #e2e8f0;
       border: 1px solid #374151;
@@ -77,13 +102,9 @@
       cursor: pointer;
     }
 
-    .toggle button:hover {
-      background: #1f2937;
-    }
-
     .active {
-      border: 1px solid #38bdf8;
-      color: #38bdf8;
+      border: 1px solid #38bdf8 !important;
+      color: #38bdf8 !important;
     }
   </style>
 </head>
@@ -94,7 +115,7 @@
 
 <div class="grid">
 
-  <!-- KPI -->
+  <!-- MAIN KPI ROW -->
   <div class="card full kpi">
     <div class="kpi-box">
       <div class="kpi-value">13.3M</div>
@@ -110,17 +131,28 @@
     </div>
   </div>
 
-  <!-- PLATFORM TOGGLE -->
-  <div class="card full toggle">
-    <button onclick="setPlatform('ios')" id="btn-ios">iOS</button>
-    <button onclick="setPlatform('tvos')" id="btn-tvos">tvOS</button>
+  <!-- NEW SNAPSHOT ROW (NO TOGGLE) -->
+  <div class="card full snapshot">
+    <div class="snapshot-box">
+      <div class="snapshot-title">Last 24 Hours</div>
+      <div class="snapshot-value" id="kpi-24h">—</div>
+    </div>
+
+    <div class="snapshot-box">
+      <div class="snapshot-title">Last 7 Days</div>
+      <div class="snapshot-value" id="kpi-7d">—</div>
+    </div>
+
+    <div class="snapshot-box">
+      <div class="snapshot-title">Daily Avg (Week)</div>
+      <div class="snapshot-value" id="kpi-avg">—</div>
+    </div>
   </div>
 
-  <!-- TIME RANGE TOGGLE -->
-  <div class="card full toggle">
-    <button onclick="setRange('24h')" id="btn-24h">Last 24 Hours</button>
-    <button onclick="setRange('7d')" id="btn-7d">Last 7 Days</button>
-    <button onclick="setRange('avg')" id="btn-avg">Daily Avg (Week)</button>
+  <!-- PLATFORM TOGGLE (KEPT) -->
+  <div class="card full platform-toggle">
+    <button onclick="setPlatform('ios')" id="btn-ios">iOS</button>
+    <button onclick="setPlatform('tvos')" id="btn-tvos">tvOS</button>
   </div>
 
   <!-- CHARTS -->
@@ -138,51 +170,53 @@
 
 <script>
 /* -----------------------------
-   DATA (platform × range)
+   DATA
 ------------------------------*/
 const dataStore = {
   ios: {
-    "24h": {
-      labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-      total: [10,12,8,7,6,9,18,22,28,20,18,16,24,30,34,38,36,28,24,20,16,14,12,9]
-    },
-    "7d": {
-      labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-      total: [100,160,140,190,150,80,100]
-    },
-    "avg": {
-      labels: ["Weekday Avg","Weekend Avg"],
-      total: [150, 90]
-    }
+    "24h": [10,12,8,7,6,9,18,22,28,20,18,16,24,30,34,38,36,28,24,20,16,14,12,9],
+    "7d": [100,160,140,190,150,80,100]
   },
-
   tvos: {
-    "24h": {
-      labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-      total: [2,3,1,2,1,2,4,5,6,4,3,3,5,7,8,9,8,6,5,4,3,2,2,1]
-    },
-    "7d": {
-      labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
-      total: [20,30,25,40,35,18,22]
-    },
-    "avg": {
-      labels: ["Weekday Avg","Weekend Avg"],
-      total: [32, 20]
-    }
+    "24h": [2,3,1,2,1,2,4,5,6,4,3,3,5,7,8,9,8,6,5,4,3,2,2,1],
+    "7d": [20,30,25,40,35,18,22]
   }
 };
 
 let platform = "ios";
-let range = "7d";
 
 let totalChart;
 let topCrashChart;
 
 /* -----------------------------
-   RENDER
+   HELPERS
 ------------------------------*/
-function render() {
-  const data = dataStore[platform][range];
+function sum(arr) {
+  return arr.reduce((a,b) => a + b, 0);
+}
+
+/* -----------------------------
+   RENDER KPIs (NEW SNAPSHOTS)
+------------------------------*/
+function renderKPIs() {
+  const d = dataStore[platform];
+
+  const last24h = sum(d["24h"]);
+  const last7d = sum(d["7d"]);
+  const avgWeek = (last7d / 7).toFixed(1);
+
+  document.getElementById("kpi-24h").innerText = last24h.toLocaleString();
+  document.getElementById("kpi-7d").innerText = last7d.toLocaleString();
+  document.getElementById("kpi-avg").innerText = avgWeek;
+}
+
+/* -----------------------------
+   RENDER CHARTS (DEFAULT = 7D)
+------------------------------*/
+function renderCharts() {
+  const d = dataStore[platform];
+
+  const labels7d = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
   if (totalChart) totalChart.destroy();
   if (topCrashChart) topCrashChart.destroy();
@@ -190,10 +224,10 @@ function render() {
   totalChart = new Chart(document.getElementById("totalChart"), {
     type: "line",
     data: {
-      labels: data.labels,
+      labels: labels7d,
       datasets: [{
         label: `${platform.toUpperCase()} Crashes`,
-        data: data.total,
+        data: d["7d"],
         borderColor: "#38bdf8",
         tension: 0.3
       }]
@@ -203,62 +237,50 @@ function render() {
   topCrashChart = new Chart(document.getElementById("topCrashChart"), {
     type: "line",
     data: {
-      labels: data.labels,
+      labels: labels7d,
       datasets: [
         {
           label: "44f0571b",
-          data: data.total.map(v => v * 0.25),
+          data: d["7d"].map(v => v * 0.25),
           tension: 0.3
         },
         {
           label: "4b94166ca",
-          data: data.total.map(v => v * 0.15),
-          tension: 0.3
-        },
-        {
-          label: "9b2268125",
-          data: data.total.map(v => v * 0.1),
+          data: d["7d"].map(v => v * 0.15),
           tension: 0.3
         }
       ]
     },
     options: {
-      plugins: {
-        legend: { position: "bottom" }
-      }
+      plugins: { legend: { position: "bottom" } }
     }
   });
-
-  setActiveButtons();
 }
 
 /* -----------------------------
-   TOGGLES
+   PLATFORM TOGGLE
 ------------------------------*/
 function setPlatform(p) {
   platform = p;
-  render();
-}
-
-function setRange(r) {
-  range = r;
-  render();
+  renderKPIs();
+  renderCharts();
+  setActive();
 }
 
 /* -----------------------------
    UI STATE
 ------------------------------*/
-function setActiveButtons() {
-  document.querySelectorAll(".toggle button").forEach(b => b.classList.remove("active"));
-
+function setActive() {
+  document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
   document.getElementById("btn-" + platform).classList.add("active");
-  document.getElementById("btn-" + range).classList.add("active");
 }
 
 /* -----------------------------
    INIT
 ------------------------------*/
-render();
+renderKPIs();
+renderCharts();
+setActive();
 </script>
 
 </body>
