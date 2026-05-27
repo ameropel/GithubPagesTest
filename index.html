@@ -2,285 +2,407 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Crash Dashboard</title>
+  <title>Crash Stability Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
+      font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e2e8f0;
     }
 
     header {
-      padding: 16px 24px;
       background: #111827;
-      font-size: 20px;
+      padding: 18px 24px;
+      font-size: 24px;
       font-weight: bold;
+      border-bottom: 1px solid #1f2937;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      padding: 16px;
+    .container {
+      padding: 20px;
     }
 
     .card {
-      background: #1f2937;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      background: #1e293b;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
     }
 
-    .full { grid-column: span 2; }
-
-    canvas { max-height: 300px; }
-
-    /* KPI ROW */
-    .kpi {
+    .filter-row {
       display: flex;
-      gap: 16px;
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .kpi-box {
-      flex: 1;
+    .filter-row button,
+    .owner-tabs button {
       background: #111827;
-      padding: 16px;
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    .kpi-value {
-      font-size: 28px;
-      font-weight: bold;
-    }
-
-    .kpi-label {
-      font-size: 12px;
-      opacity: 0.7;
-    }
-
-    /* NEW: snapshot row */
-    .snapshot {
-      display: flex;
-      gap: 16px;
-    }
-
-    .snapshot-box {
-      flex: 1;
-      background: #0b1220;
       border: 1px solid #374151;
-      padding: 14px;
+      color: #cbd5e1;
+      padding: 10px 16px;
       border-radius: 10px;
-    }
-
-    .snapshot-title {
-      font-size: 12px;
-      opacity: 0.7;
-      margin-bottom: 6px;
-    }
-
-    .snapshot-value {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .platform-toggle {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .platform-toggle button {
-      background: #111827;
-      color: #e2e8f0;
-      border: 1px solid #374151;
-      padding: 8px 12px;
-      border-radius: 8px;
       cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .filter-row button:hover,
+    .owner-tabs button:hover {
+      background: #1f2937;
     }
 
     .active {
-      border: 1px solid #38bdf8 !important;
+      border-color: #38bdf8 !important;
       color: #38bdf8 !important;
     }
+
+    .scorecards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .scorecard {
+      background: #111827;
+      border-radius: 12px;
+      padding: 18px;
+      border: 1px solid #334155;
+    }
+
+    .scorecard-title {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-bottom: 10px;
+    }
+
+    .scorecard-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 14px;
+    }
+
+    .scorecard-stat {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .owner-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th {
+      text-align: left;
+      background: #111827;
+      padding: 12px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    td {
+      padding: 12px;
+      border-top: 1px solid #334155;
+      font-size: 14px;
+    }
+
+    tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .signature {
+      font-family: monospace;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .jira {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 1000px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    canvas {
+      max-height: 320px;
+    }
+
   </style>
 </head>
 
 <body>
 
-<header>Crash Analytics Dashboard</header>
+<header>Crash Stability Dashboard</header>
 
-<div class="grid">
+<div class="container">
 
-  <!-- MAIN KPI ROW -->
-  <div class="card full kpi">
-    <div class="kpi-box">
-      <div class="kpi-value">13.3M</div>
-      <div class="kpi-label">Total Sessions</div>
-    </div>
-    <div class="kpi-box">
-      <div class="kpi-value">3,641</div>
-      <div class="kpi-label">Total Crashes</div>
-    </div>
-    <div class="kpi-box">
-      <div class="kpi-value">0.027%</div>
-      <div class="kpi-label">Crash Rate</div>
+  <!-- DAY FILTER -->
+  <div class="card">
+    <div class="filter-row">
+      <button class="active">3 Day</button>
+      <button>7 Day</button>
+      <button>14 Day</button>
+      <button>30 Day</button>
     </div>
   </div>
 
-  <!-- NEW SNAPSHOT ROW (NO TOGGLE) -->
-  <div class="card full snapshot">
-    <div class="snapshot-box">
-      <div class="snapshot-title">Last 24 Hours</div>
-      <div class="snapshot-value" id="kpi-24h">—</div>
-    </div>
+  <!-- SCORECARDS -->
+  <div class="card">
+    <h2>Owner Summary</h2>
 
-    <div class="snapshot-box">
-      <div class="snapshot-title">Last 7 Days</div>
-      <div class="snapshot-value" id="kpi-7d">—</div>
-    </div>
+    <div class="scorecards">
 
-    <div class="snapshot-box">
-      <div class="snapshot-title">Daily Avg (Week)</div>
-      <div class="snapshot-value" id="kpi-avg">—</div>
+      <div class="scorecard">
+        <div class="scorecard-title">Player</div>
+        <div class="scorecard-value">12,451</div>
+
+        <div class="scorecard-stat">
+          Unique Crashes: 28
+        </div>
+
+        <div class="scorecard-stat">
+          User Impact: 0.092%
+        </div>
+      </div>
+
+      <div class="scorecard">
+        <div class="scorecard-title">Ad Tech</div>
+        <div class="scorecard-value">5,530</div>
+
+        <div class="scorecard-stat">
+          Unique Crashes: 14
+        </div>
+
+        <div class="scorecard-stat">
+          User Impact: 0.041%
+        </div>
+      </div>
+
+      <div class="scorecard">
+        <div class="scorecard-title">GI SDK</div>
+        <div class="scorecard-value">2,211</div>
+
+        <div class="scorecard-stat">
+          Unique Crashes: 9
+        </div>
+
+        <div class="scorecard-stat">
+          User Impact: 0.016%
+        </div>
+      </div>
+
+      <div class="scorecard">
+        <div class="scorecard-title">Apple Client</div>
+        <div class="scorecard-value">890</div>
+
+        <div class="scorecard-stat">
+          Unique Crashes: 5
+        </div>
+
+        <div class="scorecard-stat">
+          User Impact: 0.006%
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- PLATFORM TOGGLE (KEPT) -->
-  <div class="card full platform-toggle">
-    <button onclick="setPlatform('ios')" id="btn-ios">iOS</button>
-    <button onclick="setPlatform('tvos')" id="btn-tvos">tvOS</button>
+  <!-- OWNER TABS -->
+  <div class="card">
+    <div class="owner-tabs">
+      <button class="active">Player</button>
+      <button>Ad Tech</button>
+      <button>GI SDK</button>
+      <button>Apple Client</button>
+    </div>
   </div>
 
-  <!-- CHARTS -->
-  <div class="card full">
-    <h3>Total Crashes Over Time</h3>
-    <canvas id="totalChart"></canvas>
-  </div>
+  <!-- CONTENT -->
+  <div class="layout">
 
-  <div class="card full">
-    <h3>Top Crash Signatures</h3>
-    <canvas id="topCrashChart"></canvas>
+    <!-- TABLE -->
+    <div class="card">
+
+      <h2>Top Crashes</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Signature</th>
+            <th>Crash Count</th>
+            <th>% Impact</th>
+            <th>Jira</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr>
+            <td class="signature">
+              9b2268125904beeb334781938a2575d64bd5d721
+            </td>
+            <td>385</td>
+            <td>0.003%</td>
+            <td>
+              <a href="#" class="jira">
+                PLAYER-412
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="signature">
+              3d57ebb031972beff1359d520150d52b9b54cf43
+            </td>
+            <td>236</td>
+            <td>0.002%</td>
+            <td>
+              <a href="#" class="jira">
+                PLAYER-398
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="signature">
+              e8b2ec21e7f17af5ebe5e5190e30419326c4eb17
+            </td>
+            <td>216</td>
+            <td>0.002%</td>
+            <td>
+              <a href="#" class="jira">
+                PLAYER-421
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="signature">
+              d62120cfe62be9a3e8487872b55b46c94b41ba67
+            </td>
+            <td>204</td>
+            <td>0.001%</td>
+            <td>
+              <a href="#" class="jira">
+                PLAYER-404
+              </a>
+            </td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <!-- CHART -->
+    <div class="card">
+
+      <h2>Crash Trend</h2>
+
+      <canvas id="trendChart"></canvas>
+
+    </div>
+
   </div>
 
 </div>
 
 <script>
-/* -----------------------------
-   DATA
-------------------------------*/
-const dataStore = {
-  ios: {
-    "24h": [10,12,8,7,6,9,18,22,28,20,18,16,24,30,34,38,36,28,24,20,16,14,12,9],
-    "7d": [100,160,140,190,150,80,100]
+
+const ctx = document.getElementById('trendChart');
+
+new Chart(ctx, {
+  type: 'line',
+
+  data: {
+    labels: [
+      'Day 1',
+      'Day 2',
+      'Day 3',
+      'Day 4',
+      'Day 5',
+      'Day 6',
+      'Day 7'
+    ],
+
+    datasets: [{
+      label: 'Total Crashes',
+
+      data: [
+        120,
+        180,
+        160,
+        240,
+        210,
+        300,
+        280
+      ],
+
+      borderColor: '#38bdf8',
+      backgroundColor: 'rgba(56,189,248,0.2)',
+      tension: 0.35,
+      fill: true
+    }]
   },
-  tvos: {
-    "24h": [2,3,1,2,1,2,4,5,6,4,3,3,5,7,8,9,8,6,5,4,3,2,2,1],
-    "7d": [20,30,25,40,35,18,22]
-  }
-};
 
-let platform = "ios";
+  options: {
+    responsive: true,
 
-let totalChart;
-let topCrashChart;
-
-/* -----------------------------
-   HELPERS
-------------------------------*/
-function sum(arr) {
-  return arr.reduce((a,b) => a + b, 0);
-}
-
-/* -----------------------------
-   RENDER KPIs (NEW SNAPSHOTS)
-------------------------------*/
-function renderKPIs() {
-  const d = dataStore[platform];
-
-  const last24h = sum(d["24h"]);
-  const last7d = sum(d["7d"]);
-  const avgWeek = (last7d / 7).toFixed(1);
-
-  document.getElementById("kpi-24h").innerText = last24h.toLocaleString();
-  document.getElementById("kpi-7d").innerText = last7d.toLocaleString();
-  document.getElementById("kpi-avg").innerText = avgWeek;
-}
-
-/* -----------------------------
-   RENDER CHARTS (DEFAULT = 7D)
-------------------------------*/
-function renderCharts() {
-  const d = dataStore[platform];
-
-  const labels7d = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-
-  if (totalChart) totalChart.destroy();
-  if (topCrashChart) topCrashChart.destroy();
-
-  totalChart = new Chart(document.getElementById("totalChart"), {
-    type: "line",
-    data: {
-      labels: labels7d,
-      datasets: [{
-        label: `${platform.toUpperCase()} Crashes`,
-        data: d["7d"],
-        borderColor: "#38bdf8",
-        tension: 0.3
-      }]
-    }
-  });
-
-  topCrashChart = new Chart(document.getElementById("topCrashChart"), {
-    type: "line",
-    data: {
-      labels: labels7d,
-      datasets: [
-        {
-          label: "44f0571b",
-          data: d["7d"].map(v => v * 0.25),
-          tension: 0.3
-        },
-        {
-          label: "4b94166ca",
-          data: d["7d"].map(v => v * 0.15),
-          tension: 0.3
+    plugins: {
+      legend: {
+        labels: {
+          color: '#e2e8f0'
         }
-      ]
+      }
     },
-    options: {
-      plugins: { legend: { position: "bottom" } }
+
+    scales: {
+      x: {
+        ticks: {
+          color: '#cbd5e1'
+        },
+
+        grid: {
+          color: 'rgba(255,255,255,0.05)'
+        }
+      },
+
+      y: {
+        ticks: {
+          color: '#cbd5e1'
+        },
+
+        grid: {
+          color: 'rgba(255,255,255,0.05)'
+        }
+      }
     }
-  });
-}
+  }
+});
 
-/* -----------------------------
-   PLATFORM TOGGLE
-------------------------------*/
-function setPlatform(p) {
-  platform = p;
-  renderKPIs();
-  renderCharts();
-  setActive();
-}
-
-/* -----------------------------
-   UI STATE
-------------------------------*/
-function setActive() {
-  document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-  document.getElementById("btn-" + platform).classList.add("active");
-}
-
-/* -----------------------------
-   INIT
-------------------------------*/
-renderKPIs();
-renderCharts();
-setActive();
 </script>
 
 </body>
